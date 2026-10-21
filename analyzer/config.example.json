@@ -1,0 +1,27 @@
+{
+  "sampleFps": 1,
+  "roi": [0.2, 0.1, 0.6, 0.8],
+  "lang": "zh",
+  "thresholds": {
+    "yawMax": 20.0,
+    "headDownPitch": 20.0,
+    "distractionMinSec": 5.0,
+    "phoneMinSec": 3.0,
+    "handMinSec": 3.0,
+    "absentMinSec": 5.0,
+    "focusMinSec": 30.0,
+    "segmentSec": 300.0,
+    "skinMinRatio": 0.02,
+    "presentMinRatio": 0.008
+  },
+  "weights": {
+    "phonePenalty": 25.0,
+    "handPenalty": 55.0,
+    "maxDistractionScore": 60.0,
+    "maxDeviationPenalty": 45.0
+  },
+  "audio": {
+    "modelSize": "small",
+    "keywords": ["数学", "语文", "英语", "作业", "题目", "练习"]
+  }
+}

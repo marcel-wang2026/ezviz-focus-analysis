@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head th:replace="~{fragments :: head('仪表盘')}"></head>
+<body>
+<header th:replace="~{fragments :: nav('dashboard')}"></header>
+<div th:replace="~{fragments :: flash}"></div>
+
+<div class="container">
+    <div class="page-title">
+        <h1>仪表盘</h1>
+        <span class="hint">下载、归档、算法分析与报告的整体运行情况</span>
+    </div>
+
+    <div class="grid cols-4" style="margin-bottom:18px">
+        <div class="stat">
+            <div class="label">摄像头</div>
+            <div class="value primary" th:text="${cameraCount}">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">视频归档</div>
+            <div class="value" th:text="${videoCount}">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">可分析视频</div>
+            <div class="value success" th:text="${readyVideoCount}">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">分析报告</div>
+            <div class="value warn" th:text="${reportCount}">0</div>
+        </div>
+    </div>
+
+    <div class="grid cols-2">
+        <div class="card">
+            <h2>最近归档视频</h2>
+            <table th:if="${!#lists.isEmpty(recentVideos)}">
+                <thead>
+                <tr>
+                    <th>摄像头</th>
+                    <th>时间段</th>
+                    <th>时长</th>
+                    <th>状态</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="v : ${recentVideos}">
+                    <td th:text="${v.cameraName}">摄像头</td>
+                    <td class="mono" th:text="${#temporals.format(v.beginTime,'MM-dd HH:mm')} + ' ~ ' + ${#temporals.format(v.endTime,'HH:mm')}"></td>
+                    <td th:text="${v.durationSec} + ' 秒'"></td>
+                    <td><span class="badge" th:classappend="${v.status}" th:text="${v.status}"></span></td>
+                    <td><a th:href="@{'/videos/' + ${v.id}}">详情</a></td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="empty" th:if="${#lists.isEmpty(recentVideos)}">暂无视频，请先在「摄像头」中立即下载，或配置下载规则</div>
+        </div>
+
+        <div class="card">
+            <h2>最近分析报告</h2>
+            <table th:if="${!#lists.isEmpty(recentReports)}">
+                <thead>
+                <tr>
+                    <th>摄像头</th>
+                    <th>学习时长</th>
+                    <th>专注度</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${recentReports}">
+                    <td th:text="${r.cameraName}">摄像头</td>
+                    <td th:text="${#numbers.formatDecimal(r.studyDurationSec/60,1,1)} + ' 分钟'"></td>
+                    <td th:text="${r.focusScore} + ' 分'"></td>
+                    <td><a th:href="@{'/reports/' + ${r.id}}">查看报告</a></td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="empty" th:if="${#lists.isEmpty(recentReports)}">暂无报告，请到「视频库」选择视频提交分析</div>
+        </div>
+    </div>
+
+    <div class="card" th:if="${!#lists.isEmpty(runningTasks)}">
+        <h2>正在分析（<span th:text="${runningTaskCount}"></span> 个）</h2>
+        <table>
+            <thead>
+            <tr><th>任务</th><th>视频</th><th>算法</th><th>进度</th><th></th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="t : ${runningTasks}">
+                <td th:text="'#' + ${t.id}"></td>
+                <td th:text="'视频 #' + ${t.videoId}"></td>
+                <td class="mono" th:text="${t.tasks}"></td>
+                <td th:text="${t.progress} + '%'"></td>
+                <td><a th:href="@{'/tasks/' + ${t.id}}">查看进度</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>使用流程</h2>
+        <ol class="muted" style="margin:0;padding-left:20px">
+            <li>在「萤石账号」填写开放平台 appKey / appSecret，测试连接并同步设备。</li>
+            <li>在「摄像头」配置需要下载的通道，可设置桌面 ROI 区域。</li>
+            <li>在「下载规则」配置 cron 周期、回看窗口与自动分析，系统会定时下载并按日期归档。</li>
+            <li>在「分析中心」可指定任意时间段立即下载并分析，或在「视频库」对已有视频提交分析。</li>
+            <li>在「分析报告」查看视频时长、学习时长、学习间隔、每段专注度总结与语音转写。</li>
+        </ol>
+    </div>
+</div>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

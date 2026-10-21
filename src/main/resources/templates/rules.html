@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head th:replace="~{fragments :: head('下载规则')}"></head>
+<body>
+<header th:replace="~{fragments :: nav('rules')}"></header>
+<div th:replace="~{fragments :: flash}"></div>
+
+<div class="container">
+    <div class="page-title">
+        <h1>下载规则</h1>
+        <span class="hint">按 cron 周期定时拉取指定摄像头的录像，按时间段切分并归档</span>
+    </div>
+
+    <div class="card">
+        <h2 th:text="${rule.id == null ? '新增规则' : '编辑规则 #' + rule.id}">新增规则</h2>
+        <form th:action="@{/rules}" method="post" th:object="${rule}">
+            <input type="hidden" th:field="*{id}">
+            <div class="form-grid">
+                <div>
+                    <label>规则名称</label>
+                    <input th:field="*{name}" required placeholder="例如：书房每 30 分钟">
+                </div>
+                <div>
+                    <label>摄像头</label>
+                    <select th:field="*{cameraId}" required>
+                        <option value="">请选择</option>
+                        <option th:each="c : ${cameras}" th:value="${c.id}" th:text="${c.name} + ' (' + ${c.deviceSerial} + ')'"></option>
+                    </select>
+                </div>
+                <div>
+                    <label>cron 表达式（六段式）</label>
+                    <input th:field="*{cron}" required placeholder="0 0/30 * * * *">
+                </div>
+                <div>
+                    <label>每次回看窗口（分钟）</label>
+                    <input th:field="*{windowMinutes}" type="number" min="1" value="30">
+                </div>
+                <div>
+                    <label>单文件切分长度（分钟）</label>
+                    <input th:field="*{segmentMinutes}" type="number" min="1" value="30">
+                </div>
+                <div>
+                    <label>归档保留天数（0=永久）</label>
+                    <input th:field="*{retentionDays}" type="number" min="0" value="30">
+                </div>
+                <div>
+                    <label>自动分析算法</label>
+                    <input th:field="*{analyzeTasks}" placeholder="focus,distraction,hands,phone,audio">
+                </div>
+            </div>
+            <div class="form-actions" style="align-items:center;flex-wrap:wrap">
+                <div class="checkbox">
+                    <input type="checkbox" th:field="*{enabled}" id="ruleEnabled">
+                    <label for="ruleEnabled">启用规则</label>
+                </div>
+                <div class="checkbox">
+                    <input type="checkbox" th:field="*{autoAnalyze}" id="ruleAnalyze">
+                    <label for="ruleAnalyze">下载完成后自动分析</label>
+                </div>
+                <button class="btn" type="submit">保存</button>
+                <a class="btn ghost" th:href="@{/rules}" th:if="${rule.id != null}">取消编辑</a>
+            </div>
+        </form>
+        <p class="muted" style="margin:14px 0 0">
+            cron 示例：<span class="mono">0 0/30 * * * *</span> 每 30 分钟；
+            <span class="mono">0 0 9-21 * * *</span> 每天 9-21 点整点；
+            <span class="mono">0 0 8,12,16,20 * * *</span> 每天 8/12/16/20 点。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>规则列表</h2>
+        <table th:if="${!#lists.isEmpty(rules)}">
+            <thead>
+            <tr>
+                <th>规则</th>
+                <th>摄像头</th>
+                <th>调度</th>
+                <th>窗口 / 切分</th>
+                <th>自动分析</th>
+                <th>最近执行</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${rules}">
+                <td>
+                    <span th:text="${r.name}"></span>
+                    <span class="badge" th:classappend="${r.enabled} ? 'READY' : 'DELETED'"
+                          th:text="${r.enabled} ? '启用' : '停用'"></span>
+                </td>
+                <td th:text="${cameraNames.get(r.cameraId) != null ? cameraNames.get(r.cameraId) : ('#' + r.cameraId)}"></td>
+                <td class="mono" th:text="${r.cron}"></td>
+                <td th:text="${r.windowMinutes} + ' 分 / ' + ${r.segmentMinutes} + ' 分'"></td>
+                <td>
+                    <span class="badge" th:classappend="${r.autoAnalyze} ? 'RUNNING' : 'DELETED'"
+                          th:text="${r.autoAnalyze} ? '是' : '否'"></span>
+                </td>
+                <td>
+                    <div class="muted" th:text="${r.lastRunAt == null ? '尚未执行' : #temporals.format(r.lastRunAt,'MM-dd HH:mm:ss')}"></div>
+                    <div class="muted" th:text="${r.lastRunMessage}"></div>
+                </td>
+                <td>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                        <form class="inline" th:action="@{'/rules/' + ${r.id} + '/run'}" method="post">
+                            <button class="btn small" type="submit">立即执行</button>
+                        </form>
+                        <a class="btn small ghost" th:href="@{'/rules/' + ${r.id} + '/edit'}">编辑</a>
+                        <form class="inline" th:action="@{'/rules/' + ${r.id} + '/delete'}" method="post"
+                              onsubmit="return confirm('确定删除该规则？');">
+                            <button class="btn small danger" type="submit">删除</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${#lists.isEmpty(rules)}">暂无规则</div>
+    </div>
+</div>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head th:replace="~{fragments :: head('报告详情')}"></head>
+<body>
+<header th:replace="~{fragments :: nav('reports')}"></header>
+<div th:replace="~{fragments :: flash}"></div>
+
+<div class="container">
+    <div class="page-title">
+        <h1 th:text="'分析报告 #' + ${report.id}"></h1>
+        <span class="hint"
+              th:text="(${report.cameraName} ?: '未知摄像头') + ' · 录制于 ' + (${report.beginTime} == null ? '-' : ${#temporals.format(report.beginTime,'yyyy-MM-dd HH:mm:ss')})"></span>
+    </div>
+
+    <div class="grid cols-4" style="margin-bottom:18px">
+        <div class="stat"><div class="label">视频时长</div>
+            <div class="value" th:text="${report.videoDurationText}"></div></div>
+        <div class="stat"><div class="label">学习时长</div>
+            <div class="value success" th:text="${report.studyDurationText}"></div></div>
+        <div class="stat"><div class="label">综合专注度</div>
+            <div class="value primary" th:text="${#numbers.formatDecimal(report.focusScore,1,1)} + ' 分'"></div></div>
+        <div class="stat"><div class="label">学习时长占比</div>
+            <div class="value warn" th:text="${report.focusRatioText}"></div></div>
+    </div>
+
+    <div class="grid cols-4" style="margin-bottom:18px">
+        <div class="stat"><div class="label">走神累计</div>
+            <div class="value" style="font-size:20px" th:text="${#numbers.formatDecimal(report.distractedSec,1,0)} + ' 秒'"></div></div>
+        <div class="stat"><div class="label">玩手机累计</div>
+            <div class="value" style="font-size:20px" th:text="${#numbers.formatDecimal(report.phoneSec,1,0)} + ' 秒'"></div></div>
+        <div class="stat"><div class="label">玩手/小动作</div>
+            <div class="value" style="font-size:20px" th:text="${#numbers.formatDecimal(report.handPlayingSec,1,0)} + ' 秒'"></div></div>
+        <div class="stat"><div class="label">离开座位累计</div>
+            <div class="value" style="font-size:20px" th:text="${#numbers.formatDecimal(report.absentSec,1,0)} + ' 秒'"></div></div>
+    </div>
+
+    <div class="card">
+        <h2>整体总结</h2>
+        <div class="pre" th:text="${report.overallSummary}"></div>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+            <a class="btn" th:if="${video != null}" th:href="@{'/videos/' + ${report.videoId}}">查看源视频</a>
+            <a class="btn ghost" th:href="@{'/reports/' + ${report.id} + '/json'}" download>下载原始 JSON</a>
+            <a class="btn ghost" th:href="@{/reports}">返回报告列表</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>学习时间段与逐段专注度</h2>
+        <table th:if="${!segments.isEmpty()}">
+            <thead>
+            <tr>
+                <th>#</th><th>时间段</th><th>时长</th><th>状态</th><th>专注度</th>
+                <th>专注</th><th>走神</th><th>离开</th><th>玩手机</th><th>玩手</th><th>总结</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="s : ${segments}">
+                <td th:text="${s.index + 1}"></td>
+                <td class="mono" th:text="${s.startClock} + ' - ' + ${s.endClock}"></td>
+                <td th:text="${s.durationText}"></td>
+                <td><span class="badge" th:classappend="${s.state}" th:text="${s.stateLabel}"></span></td>
+                <td th:text="${#numbers.formatDecimal(s.focusScore,1,1)}"></td>
+                <td th:text="${#numbers.formatDecimal(s.focusedSec,1,0)} + 's'"></td>
+                <td th:text="${#numbers.formatDecimal(s.distractedSec,1,0)} + 's'"></td>
+                <td th:text="${#numbers.formatDecimal(s.absentSec,1,0)} + 's'"></td>
+                <td th:text="${#numbers.formatDecimal(s.phoneSec,1,0)} + 's'"></td>
+                <td th:text="${#numbers.formatDecimal(s.handPlayingSec,1,0)} + 's'"></td>
+                <td class="muted" th:text="${s.summary}"></td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${segments.isEmpty()}">未识别到有效学习时间段。</div>
+    </div>
+
+    <div class="card">
+        <h2>学习间隔</h2>
+        <table th:if="${!breaks.isEmpty()}">
+            <thead>
+            <tr><th>#</th><th>时间段</th><th>时长</th><th>类型</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="b, st : ${breaks}">
+                <td th:text="${st.count}"></td>
+                <td class="mono" th:text="${b.startClock} + ' - ' + ${b.endClock}"></td>
+                <td th:text="${b.durationText}"></td>
+                <td th:text="${b.reasonLabel}"></td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${breaks.isEmpty()}">本次录制中没有明显的学习中断。</div>
+    </div>
+
+    <div class="card">
+        <h2>异常行为事件</h2>
+        <table th:if="${!events.isEmpty()}">
+            <thead>
+            <tr><th>类型</th><th>时间段</th><th>时长</th><th>置信度</th><th>说明</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="e : ${events}">
+                <td><span class="badge" th:classappend="${e.type}" th:text="${e.typeLabel}"></span></td>
+                <td class="mono" th:text="${e.startClock} + ' - ' + ${e.endClock}"></td>
+                <td th:text="${e.durationText}"></td>
+                <td th:text="${#numbers.formatDecimal(e.confidence,1,2)}"></td>
+                <td class="muted" th:text="${e.note}"></td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${events.isEmpty()}">未检测到玩手机、走神、玩手等异常行为。</div>
+    </div>
+
+    <div class="card" th:if="${report.audioText != null && !report.audioText.isBlank()}">
+        <h2>音频内容转写</h2>
+        <div class="pre" th:text="${report.audioText}"></div>
+    </div>
+
+    <div class="card">
+        <h2>使用的算法</h2>
+        <table th:if="${algorithms.size() > 0}">
+            <thead>
+            <tr><th>算法</th><th>开源来源</th><th>运行状态</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="a : ${algorithms}">
+                <td class="mono" th:text="${a.get('name').asText()}"></td>
+                <td>
+                    <a th:if="${a.hasNonNull('url')}" th:href="${a.get('url').asText()}"
+                       target="_blank" rel="noopener"
+                       th:text="${a.hasNonNull('ref') ? a.get('ref').asText() : a.get('url').asText()}"></a>
+                </td>
+                <td>
+                    <span class="badge READY" th:if="${!a.get('degraded').asBoolean()}">真实模型</span>
+                    <span class="badge DISTRACTED" th:if="${a.get('degraded').asBoolean()}">降级 / 规则兜底</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${algorithms.size() == 0}">无算法信息。</div>
+    </div>
+
+    <div class="card">
+        <h2>逐段专注度总结（文本）</h2>
+        <div class="pre" th:text="${report.segmentsSummary}"></div>
+    </div>
+</div>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

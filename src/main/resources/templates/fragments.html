@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' · 专注度分析平台'">专注度分析平台</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<header th:fragment="nav(active)" class="topbar">
+    <div class="brand">
+        <span class="logo">◎</span>
+        <span>学习专注度分析平台</span>
+    </div>
+    <nav class="nav">
+        <a th:href="@{/}" th:classappend="${active == 'dashboard'} ? 'active'">仪表盘</a>
+        <a th:href="@{/accounts}" th:classappend="${active == 'accounts'} ? 'active'">萤石账号</a>
+        <a th:href="@{/cameras}" th:classappend="${active == 'cameras'} ? 'active'">摄像头</a>
+        <a th:href="@{/rules}" th:classappend="${active == 'rules'} ? 'active'">下载规则</a>
+        <a th:href="@{/videos}" th:classappend="${active == 'videos'} ? 'active'">视频库</a>
+        <a th:href="@{/analysis}" th:classappend="${active == 'analysis'} ? 'active'">分析中心</a>
+        <a th:href="@{/tasks}" th:classappend="${active == 'tasks'} ? 'active'">分析任务</a>
+        <a th:href="@{/reports}" th:classappend="${active == 'reports'} ? 'active'">分析报告</a>
+    </nav>
+    <form class="logout" th:action="@{/logout}" method="post">
+        <button type="submit" class="btn ghost">退出登录</button>
+    </form>
+</header>
+
+<div th:fragment="flash" class="flash-area">
+    <div class="alert success" th:if="${message}" th:text="${message}"></div>
+    <div class="alert error" th:if="${error}" th:text="${error}"></div>
+</div>
+
+<footer th:fragment="footer" class="footer">
+    <span>萤石录像定时下载 · 按时间归档 · 专注度 / 走神 / 玩手 / 玩手机 / 语音转写分析</span>
+</footer>
+</body>
+</html>

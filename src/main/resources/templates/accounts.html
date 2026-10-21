@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head th:replace="~{fragments :: head('萤石账号')}"></head>
+<body>
+<header th:replace="~{fragments :: nav('accounts')}"></header>
+<div th:replace="~{fragments :: flash}"></div>
+
+<div class="container">
+    <div class="page-title">
+        <h1>萤石账号</h1>
+        <span class="hint">在萤石开放平台「我的应用」中获取 appKey / appSecret</span>
+    </div>
+
+    <div class="card">
+        <h2 th:text="${account.id == null ? '新增账号' : '编辑账号 #' + account.id}">新增账号</h2>
+        <form th:action="@{/accounts}" method="post" th:object="${account}">
+            <input type="hidden" th:field="*{id}">
+            <div class="form-grid">
+                <div>
+                    <label>账号名称</label>
+                    <input th:field="*{name}" required placeholder="例如：家里萤石账号">
+                </div>
+                <div>
+                    <label>appKey</label>
+                    <input th:field="*{appKey}" placeholder="开放平台应用 appKey">
+                </div>
+                <div>
+                    <label>appSecret</label>
+                    <input th:field="*{appSecret}" placeholder="开放平台应用 appSecret">
+                </div>
+                <div>
+                    <label>手动 accessToken（可选）</label>
+                    <input th:field="*{accessToken}" placeholder="留空则自动换取，有效期 7 天">
+                </div>
+            </div>
+            <div class="form-actions" style="align-items:center">
+                <div class="checkbox">
+                    <input type="checkbox" th:field="*{enabled}" id="enabled">
+                    <label for="enabled">启用该账号</label>
+                </div>
+                <button class="btn" type="submit">保存</button>
+                <a class="btn ghost" th:href="@{/accounts}" th:if="${account.id != null}">取消编辑</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>已配置账号</h2>
+        <table th:if="${!#lists.isEmpty(accounts)}">
+            <thead>
+            <tr>
+                <th>名称</th>
+                <th>appKey</th>
+                <th>Token 有效期</th>
+                <th>最近检测</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="a : ${accounts}">
+                <td>
+                    <span th:text="${a.name}"></span>
+                    <span class="badge" th:classappend="${a.enabled} ? 'READY' : 'DELETED'"
+                          th:text="${a.enabled} ? '启用' : '停用'"></span>
+                </td>
+                <td class="mono" th:text="${a.appKey}"></td>
+                <td class="mono" th:text="${a.tokenExpiresAt == null ? '未获取' : #temporals.format(a.tokenExpiresAt,'yyyy-MM-dd HH:mm')}"></td>
+                <td>
+                    <div th:if="${a.lastCheckAt}" class="muted" th:text="${#temporals.format(a.lastCheckAt,'MM-dd HH:mm')}"></div>
+                    <div class="muted" th:text="${a.lastCheckMessage}"></div>
+                </td>
+                <td>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                        <form class="inline" th:action="@{'/accounts/' + ${a.id} + '/test'}" method="post">
+                            <button class="btn small ghost" type="submit">测试连接</button>
+                        </form>
+                        <form class="inline" th:action="@{'/accounts/' + ${a.id} + '/sync'}" method="post">
+                            <button class="btn small" type="submit">同步设备</button>
+                        </form>
+                        <a class="btn small ghost" th:href="@{'/accounts/' + ${a.id} + '/edit'}">编辑</a>
+                        <form class="inline" th:action="@{'/accounts/' + ${a.id} + '/delete'}" method="post"
+                              onsubmit="return confirm('确定删除该账号？');">
+                            <button class="btn small danger" type="submit">删除</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${#lists.isEmpty(accounts)}">还没有配置萤石账号</div>
+    </div>
+
+    <div class="card">
+        <h2>说明</h2>
+        <ul class="muted" style="margin:0;padding-left:20px">
+            <li>平台通过 appKey / appSecret 调用 <span class="mono">/api/lapp/token/get</span> 获取 accessToken，并自动缓存 7 天。</li>
+            <li>如果本机网络需要代理，请设置 <span class="mono">HTTPS_PROXY</span> 环境变量，后端会自动使用。</li>
+            <li>若应用权限不足，查询录像列表会失败，此时系统会尝试按时间范围直接获取 HLS 地址下载。</li>
+        </ul>
+    </div>
+</div>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

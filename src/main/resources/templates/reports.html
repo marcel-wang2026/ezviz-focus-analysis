@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head th:replace="~{fragments :: head('分析报告')}"></head>
+<body>
+<header th:replace="~{fragments :: nav('reports')}"></header>
+<div th:replace="~{fragments :: flash}"></div>
+
+<div class="container">
+    <div class="page-title">
+        <h1>分析报告</h1>
+        <span class="hint">共 <span th:text="${page.totalElements}"></span> 份报告</span>
+    </div>
+
+    <div class="card">
+        <form method="get" th:action="@{/reports}" class="form-grid" style="margin-bottom:16px">
+            <div>
+                <label>按摄像头筛选</label>
+                <select name="cameraId" onchange="this.form.submit()">
+                    <option value="">全部摄像头</option>
+                    <option th:each="c : ${cameras}" th:value="${c.id}" th:text="${c.name}"
+                            th:selected="${cameraId != null && cameraId == c.id}"></option>
+                </select>
+            </div>
+        </form>
+
+        <table th:if="${page.totalElements > 0}">
+            <thead>
+            <tr>
+                <th>报告</th><th>摄像头</th><th>录制时间</th><th>视频时长</th>
+                <th>学习时长</th><th>专注度</th><th>生成时间</th><th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${page.content}">
+                <td th:text="'#' + ${r.id}"></td>
+                <td th:text="${r.cameraName}"></td>
+                <td class="mono" th:text="${r.beginTime == null ? '-' : #temporals.format(r.beginTime,'MM-dd HH:mm:ss')}"></td>
+                <td th:text="${r.videoDurationText}"></td>
+                <td th:text="${r.studyDurationText}"></td>
+                <td>
+                    <span th:text="${#numbers.formatDecimal(r.focusScore,1,1)}"></span>
+                    <span class="muted" th:text="'（' + ${r.focusRatioText} + ' 专注）'"></span>
+                </td>
+                <td class="mono" th:text="${#temporals.format(r.createdAt,'MM-dd HH:mm:ss')}"></td>
+                <td>
+                    <a th:href="@{'/reports/' + ${r.id}}">查看</a>
+                    <a th:href="@{'/videos/' + ${r.videoId}}">视频</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${page.totalElements == 0}">暂无分析报告，请在「分析中心」对视频发起特征分析。</div>
+
+        <div class="pager" th:if="${page.totalPages > 1}">
+            <a th:if="${page.hasPrevious()}"
+               th:href="@{/reports(cameraId=${cameraId}, page=${page.number - 1})}">上一页</a>
+            <span>第 <span th:text="${page.number + 1}"></span> / <span th:text="${page.totalPages}"></span> 页</span>
+            <a th:if="${page.hasNext()}"
+               th:href="@{/reports(cameraId=${cameraId}, page=${page.number + 1})}">下一页</a>
+        </div>
+    </div>
+</div>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

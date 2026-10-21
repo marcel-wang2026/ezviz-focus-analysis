@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head th:replace="~{fragments :: head('分析任务')}"></head>
+<body>
+<header th:replace="~{fragments :: nav('tasks')}"></header>
+<div th:replace="~{fragments :: flash}"></div>
+
+<div class="container">
+    <div class="page-title">
+        <h1>分析任务</h1>
+        <span class="hint">共 <span th:text="${page.totalElements}"></span> 个任务</span>
+    </div>
+
+    <div class="card">
+        <table th:if="${page.totalElements > 0}">
+            <thead>
+            <tr>
+                <th>任务</th><th>视频</th><th>算法</th><th>状态</th><th>进度</th><th>触发</th><th>创建时间</th><th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="t : ${page.content}">
+                <td th:text="'#' + ${t.id}"></td>
+                <td th:text="'视频 #' + ${t.videoId}"></td>
+                <td class="mono" th:text="${t.tasks}"></td>
+                <td>
+                    <span class="badge" th:classappend="${t.status}" th:text="${t.status}"></span>
+                    <div class="muted" th:text="${t.message}"></div>
+                </td>
+                <td th:text="${t.progress} + '%'"></td>
+                <td th:text="${t.triggerType}"></td>
+                <td class="mono" th:text="${#temporals.format(t.createdAt,'MM-dd HH:mm:ss')}"></td>
+                <td>
+                    <a th:href="@{'/tasks/' + ${t.id}}">详情</a>
+                    <a th:if="${t.reportId != null}" th:href="@{'/reports/' + ${t.reportId}}">报告</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${page.totalElements == 0}">暂无分析任务</div>
+
+        <div class="pager" th:if="${page.totalPages > 1}">
+            <a th:if="${page.hasPrevious()}" th:href="@{/tasks(page=${page.number - 1})}">上一页</a>
+            <span>第 <span th:text="${page.number + 1}"></span> / <span th:text="${page.totalPages}"></span> 页</span>
+            <a th:if="${page.hasNext()}" th:href="@{/tasks(page=${page.number + 1})}">下一页</a>
+        </div>
+    </div>
+</div>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head th:replace="~{fragments :: head('任务详情')}"></head>
+<body>
+<header th:replace="~{fragments :: nav('tasks')}"></header>
+<div th:replace="~{fragments :: flash}"></div>
+
+<div class="container">
+    <div class="page-title">
+        <h1 th:text="'分析任务 #' + ${task.id}"></h1>
+        <span class="hint" th:text="${task.triggerType} + ' · 创建于 ' + ${#temporals.format(task.createdAt,'yyyy-MM-dd HH:mm:ss')}"></span>
+    </div>
+
+    <div class="grid cols-4" style="margin-bottom:18px">
+        <div class="stat"><div class="label">状态</div>
+            <div class="value" style="font-size:20px">
+                <span class="badge" th:classappend="${task.status}" th:text="${task.status}"></span>
+            </div></div>
+        <div class="stat"><div class="label">进度</div>
+            <div class="value primary" th:text="${task.progress} + '%'"></div></div>
+        <div class="stat"><div class="label">开始时间</div>
+            <div class="value mono" style="font-size:14px"
+                 th:text="${task.startedAt == null ? '-' : #temporals.format(task.startedAt,'MM-dd HH:mm:ss')}"></div></div>
+        <div class="stat"><div class="label">结束时间</div>
+            <div class="value mono" style="font-size:14px"
+                 th:text="${task.finishedAt == null ? '-' : #temporals.format(task.finishedAt,'MM-dd HH:mm:ss')}"></div></div>
+    </div>
+
+    <div class="card">
+        <h2>任务信息</h2>
+        <table>
+            <tbody>
+            <tr><th style="width:160px">视频</th>
+                <td><a th:if="${video != null}" th:href="@{'/videos/' + ${task.videoId}}"
+                       th:text="'#' + ${task.videoId} + ' · ' + ${video.cameraName} + ' · ' + ${#temporals.format(video.beginTime,'yyyy-MM-dd HH:mm:ss')}"></a>
+                    <span th:if="${video == null}" class="muted">视频记录不存在</span></td></tr>
+            <tr><th>算法任务</th><td class="mono" th:text="${task.tasks}"></td></tr>
+            <tr><th>执行说明</th><td th:text="${task.message}"></td></tr>
+            </tbody>
+        </table>
+        <div style="margin-top:14px;display:flex;gap:10px">
+            <a class="btn" th:if="${task.reportId != null}" th:href="@{'/reports/' + ${task.reportId}}">查看分析报告</a>
+            <form th:if="${task.status == 'FAILED'}" th:action="@{'/tasks/' + ${task.id} + '/retry'}" method="post">
+                <button class="btn ghost" type="submit">重新分析</button>
+            </form>
+            <a class="btn ghost" th:href="@{/tasks}">返回任务列表</a>
+        </div>
+    </div>
+
+    <div class="card" th:if="${task.status == 'RUNNING' || task.status == 'PENDING'}">
+        <h2>执行中</h2>
+        <p class="muted">算法正在处理视频，页面每 3 秒自动刷新。</p>
+        <div class="score-bar"><span th:style="'width:' + ${task.progress} + '%'"></span></div>
+    </div>
+</div>
+<footer th:replace="~{fragments :: footer}"></footer>
+<script th:if="${task.status == 'RUNNING' || task.status == 'PENDING'}" th:inline="javascript">
+    setTimeout(function () { window.location.reload(); }, 3000);
+</script>
+</body>
+</html>

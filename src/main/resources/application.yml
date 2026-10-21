@@ -1,0 +1,68 @@
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+spring:
+  application:
+    name: ezviz-focus-analysis
+  datasource:
+    url: ${DB_URL:jdbc:h2:file:./data/focusdb;AUTO_SERVER=TRUE;MODE=MySQL}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+    driver-class-name: ${DB_DRIVER:org.h2.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Shanghai
+        format_sql: false
+  thymeleaf:
+    cache: false
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+  mvc:
+    problemdetails:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.focus.ezviz: INFO
+
+app:
+  timezone: Asia/Shanghai
+  storage:
+    # 视频归档根目录，按 摄像头/年/月/日 分层
+    root: ${VIDEO_ROOT:./data/videos}
+    retention-days: ${RETENTION_DAYS:30}
+  ezviz:
+    base-url: ${EZVIZ_BASE_URL:https://open.ys7.com}
+    connect-timeout-seconds: 10
+    read-timeout-seconds: 60
+    # 单次下载允许的最大时间跨度（分钟），萤石 HLS 接口限制 48 小时
+    max-range-minutes: 2880
+  analyzer:
+    # cli: 本机 python 子进程；http: 独立算法服务
+    mode: ${ANALYZER_MODE:cli}
+    python: ${ANALYZER_PYTHON:python3}
+    script: ${ANALYZER_SCRIPT:./analyzer/analyze.py}
+    http-url: ${ANALYZER_HTTP_URL:http://127.0.0.1:9001/analyze}
+    timeout-seconds: ${ANALYZER_TIMEOUT:3600}
+    sample-fps: ${ANALYZER_SAMPLE_FPS:1}
+    # 传给算法的任务集合
+    tasks: focus,distraction,hands,phone,audio
+    lang: zh
+  scheduler:
+    enabled: ${SCHEDULER_ENABLED:true}
+    pool-size: 3
+  demo:
+    # 首次启动时写入演示账号/摄像头/规则，并生成一段本地示例视频，便于无萤石账号时体验
+    enabled: ${DEMO_ENABLED:true}

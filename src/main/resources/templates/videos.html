@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head th:replace="~{fragments :: head('视频库')}"></head>
+<body>
+<header th:replace="~{fragments :: nav('videos')}"></header>
+<div th:replace="~{fragments :: flash}"></div>
+
+<div class="container">
+    <div class="page-title">
+        <h1>视频库</h1>
+        <span class="hint">已按「摄像头 / 年 / 月 / 日」归档的录像</span>
+    </div>
+
+    <div class="card">
+        <form method="get" th:action="@{/videos}" class="form-grid" style="align-items:end">
+            <div>
+                <label>摄像头</label>
+                <select name="cameraId">
+                    <option value="">全部</option>
+                    <option th:each="c : ${cameras}" th:value="${c.id}" th:text="${c.name}"
+                            th:selected="${cameraId != null && cameraId == c.id}"></option>
+                </select>
+            </div>
+            <div>
+                <label>状态</label>
+                <select name="status">
+                    <option value="">全部</option>
+                    <option value="READY" th:selected="${status == 'READY'}">READY</option>
+                    <option value="DOWNLOADING" th:selected="${status == 'DOWNLOADING'}">DOWNLOADING</option>
+                    <option value="FAILED" th:selected="${status == 'FAILED'}">FAILED</option>
+                    <option value="DELETED" th:selected="${status == 'DELETED'}">DELETED</option>
+                </select>
+            </div>
+            <div>
+                <label>日期</label>
+                <input type="date" name="date" th:value="${date}">
+            </div>
+            <div>
+                <button class="btn" type="submit">筛选</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>视频列表（共 <span th:text="${page.totalElements}"></span> 条）</h2>
+        <table th:if="${page.totalElements > 0}">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>摄像头</th>
+                <th>时间段</th>
+                <th>时长</th>
+                <th>大小</th>
+                <th>来源</th>
+                <th>状态</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="v : ${page.content}">
+                <td class="mono" th:text="'#' + ${v.id}"></td>
+                <td th:text="${v.cameraName}"></td>
+                <td class="mono">
+                    <div th:text="${#temporals.format(v.beginTime,'yyyy-MM-dd HH:mm:ss')}"></div>
+                    <div class="muted" th:text="'~ ' + ${#temporals.format(v.endTime,'HH:mm:ss')}"></div>
+                </td>
+                <td th:text="${#numbers.formatDecimal(v.durationSec/60,1,1)} + ' 分'"></td>
+                <td th:text="${#numbers.formatDecimal(v.fileSize/1048576.0,1,1)} + ' MB'"></td>
+                <td th:text="${v.source}"></td>
+                <td>
+                    <span class="badge" th:classappend="${v.status}" th:text="${v.status}"></span>
+                    <div class="muted" th:text="${v.message}"></div>
+                </td>
+                <td>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                        <a class="btn small ghost" th:href="@{'/videos/' + ${v.id}}">详情</a>
+                        <form class="inline" th:if="${v.status == 'READY'}"
+                              th:action="@{'/videos/' + ${v.id} + '/analyze'}" method="post">
+                            <input type="hidden" name="tasks" value="focus,distraction,hands,phone,audio">
+                            <button class="btn small" type="submit">分析</button>
+                        </form>
+                        <form class="inline" th:action="@{'/videos/' + ${v.id} + '/delete'}" method="post"
+                              onsubmit="return confirm('确定删除该视频文件？分析报告会保留。');">
+                            <button class="btn small danger" type="submit">删除文件</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${page.totalElements == 0}">没有符合条件的视频</div>
+
+        <div class="pager" th:if="${page.totalPages > 1}">
+            <a th:if="${page.hasPrevious()}"
+               th:href="@{/videos(page=${page.number - 1}, cameraId=${cameraId}, status=${status}, date=${date})}">上一页</a>
+            <span>第 <span th:text="${page.number + 1}"></span> / <span th:text="${page.totalPages}"></span> 页</span>
+            <a th:if="${page.hasNext()}"
+               th:href="@{/videos(page=${page.number + 1}, cameraId=${cameraId}, status=${status}, date=${date})}">下一页</a>
+        </div>
+    </div>
+</div>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

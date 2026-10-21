@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head th:replace="~{fragments :: head('分析中心')}"></head>
+<body>
+<header th:replace="~{fragments :: nav('analysis')}"></header>
+<div th:replace="~{fragments :: flash}"></div>
+
+<div class="container">
+    <div class="page-title">
+        <h1>分析中心</h1>
+        <span class="hint">指定某个摄像头与时间段：先下载归档，再自动提交特征分析</span>
+    </div>
+
+    <div class="card">
+        <h2>按时间点 / 时间段分析</h2>
+        <form th:action="@{/analysis/point}" method="post">
+            <div class="form-grid">
+                <div>
+                    <label>摄像头</label>
+                    <select name="cameraId" required>
+                        <option value="">请选择</option>
+                        <option th:each="c : ${cameras}" th:value="${c.id}"
+                                th:text="${c.name} + ' (' + ${c.deviceSerial} + ')'"></option>
+                    </select>
+                </div>
+                <div>
+                    <label>开始时间</label>
+                    <input type="datetime-local" name="from" required
+                           th:value="${#temporals.format(defaultFrom,'yyyy-MM-dd''T''HH:mm')}">
+                </div>
+                <div>
+                    <label>结束时间</label>
+                    <input type="datetime-local" name="to" required
+                           th:value="${#temporals.format(defaultTo,'yyyy-MM-dd''T''HH:mm')}">
+                </div>
+                <div>
+                    <label>算法任务</label>
+                    <input name="tasks" value="focus,distraction,hands,phone,audio">
+                </div>
+            </div>
+            <div class="form-actions" style="align-items:center">
+                <div class="checkbox">
+                    <input type="checkbox" name="autoAnalyze" value="true" id="autoAnalyze" checked>
+                    <label for="autoAnalyze">下载完成后自动分析</label>
+                </div>
+                <button class="btn" type="submit">下载并分析</button>
+            </div>
+        </form>
+        <p class="muted" style="margin:14px 0 0">
+            时间跨度最大 48 小时。系统会优先查询云存储录像并按 30 分钟切分下载；若查询接口无权限，则按整段时间直接获取录像。
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>近期分析任务</h2>
+        <table th:if="${!#lists.isEmpty(tasks)}">
+            <thead>
+            <tr>
+                <th>任务</th><th>视频</th><th>算法</th><th>状态</th><th>进度</th><th>触发</th><th>时间</th><th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="t : ${tasks}">
+                <td th:text="'#' + ${t.id}"></td>
+                <td th:text="'视频 #' + ${t.videoId}"></td>
+                <td class="mono" th:text="${t.tasks}"></td>
+                <td><span class="badge" th:classappend="${t.status}" th:text="${t.status}"></span></td>
+                <td th:text="${t.progress} + '%'"></td>
+                <td th:text="${t.triggerType}"></td>
+                <td class="mono" th:text="${#temporals.format(t.createdAt,'MM-dd HH:mm:ss')}"></td>
+                <td>
+                    <a th:href="@{'/tasks/' + ${t.id}}">详情</a>
+                    <a th:if="${t.reportId != null}" th:href="@{'/reports/' + ${t.reportId}}">报告</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${#lists.isEmpty(tasks)}">暂无任务</div>
+    </div>
+
+    <div class="card">
+        <h2>算法说明（开源方案来源）</h2>
+        <table>
+            <thead>
+            <tr><th>算法</th><th>能力</th><th>参考开源项目 / 论文</th></tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>head_pose_focus</td>
+                <td>头部姿态 + 视线方向 → 专注度打分</td>
+                <td class="mono">yinguobing/head-pose-estimation（OpenCV solvePnP）<br>google-ai-edge/mediapipe（FaceMesh 虹膜）</td>
+            </tr>
+            <tr>
+                <td>temporal_distraction_rule</td>
+                <td>持续转头 / 长时间低头 → 走神</td>
+                <td class="mono">课堂行为识别类项目（YOLO-Pose + 几何规则）<br>论文：Detection of Students' Classroom Concentration</td>
+            </tr>
+            <tr>
+                <td>hands_activity</td>
+                <td>手部关键点与桌面 ROI → 玩手 / 小动作</td>
+                <td class="mono">google-ai-edge/mediapipe（Hands）<br>ultralytics/ultralytics（YOLOv8-pose）</td>
+            </tr>
+            <tr>
+                <td>phone_detection</td>
+                <td>YOLO 检测手机 + 手部重叠 → 玩手机</td>
+                <td class="mono">ultralytics/ultralytics（YOLOv8）<br>FPI-Det: Face–Phone Interaction 数据集论文</td>
+            </tr>
+            <tr>
+                <td>audio_asr</td>
+                <td>音频转文本（做题讲解/朗读内容）</td>
+                <td class="mono">SYSTRAN/faster-whisper、openai/whisper</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

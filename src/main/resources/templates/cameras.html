@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head th:replace="~{fragments :: head('摄像头')}"></head>
+<body>
+<header th:replace="~{fragments :: nav('cameras')}"></header>
+<div th:replace="~{fragments :: flash}"></div>
+
+<div class="container">
+    <div class="page-title">
+        <h1>摄像头配置</h1>
+        <span class="hint">选择需要下载与分析的具体摄像头通道</span>
+    </div>
+
+    <div class="card">
+        <h2 th:text="${camera.id == null ? '新增摄像头' : '编辑摄像头 #' + camera.id}">新增摄像头</h2>
+        <form th:action="@{/cameras}" method="post" th:object="${camera}">
+            <input type="hidden" th:field="*{id}">
+            <div class="form-grid">
+                <div>
+                    <label>所属萤石账号</label>
+                    <select th:field="*{accountId}" required>
+                        <option value="">请选择</option>
+                        <option th:each="a : ${accounts}" th:value="${a.id}" th:text="${a.name}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label>摄像头名称</label>
+                    <input th:field="*{name}" placeholder="例如：书房摄像头">
+                </div>
+                <div>
+                    <label>设备序列号 deviceSerial</label>
+                    <input th:field="*{deviceSerial}" placeholder="例如：BB1234567" required>
+                </div>
+                <div>
+                    <label>通道号 channelNo</label>
+                    <input th:field="*{channelNo}" type="number" min="1" value="1">
+                </div>
+                <div>
+                    <label>桌面 ROI（归一化 x,y,w,h，可留空）</label>
+                    <input th:field="*{roi}" placeholder="0.15,0.15,0.7,0.8">
+                </div>
+                <div>
+                    <label>备注</label>
+                    <input th:field="*{remark}" placeholder="例如：书桌侧上方俯视">
+                </div>
+            </div>
+            <div class="form-actions" style="align-items:center;flex-wrap:wrap">
+                <div class="checkbox">
+                    <input type="checkbox" th:field="*{enabled}" id="camEnabled">
+                    <label for="camEnabled">启用下载</label>
+                </div>
+                <div class="checkbox">
+                    <input type="checkbox" th:field="*{analysisEnabled}" id="camAnalysis">
+                    <label for="camAnalysis">允许分析</label>
+                </div>
+                <button class="btn" type="submit">保存</button>
+                <a class="btn ghost" th:href="@{/cameras}" th:if="${camera.id != null}">取消编辑</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>摄像头列表</h2>
+        <table th:if="${!#lists.isEmpty(cameras)}">
+            <thead>
+            <tr>
+                <th>名称</th>
+                <th>设备 / 通道</th>
+                <th>ROI</th>
+                <th>开关</th>
+                <th>立即下载</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${cameras}">
+                <td>
+                    <div th:text="${c.name}"></div>
+                    <div class="muted" th:text="${c.remark}"></div>
+                </td>
+                <td class="mono" th:text="${c.deviceSerial} + ' / ' + ${c.channelNo}"></td>
+                <td class="mono" th:text="${c.roi == null ? '整幅画面' : c.roi}"></td>
+                <td>
+                    <span class="badge" th:classappend="${c.enabled} ? 'READY' : 'DELETED'"
+                          th:text="${c.enabled} ? '下载' : '停用'"></span>
+                    <span class="badge" th:classappend="${c.analysisEnabled} ? 'RUNNING' : 'DELETED'"
+                          th:text="${c.analysisEnabled} ? '分析' : '不分析'"></span>
+                </td>
+                <td>
+                    <form class="inline" th:action="@{'/cameras/' + ${c.id} + '/download'}" method="post"
+                          style="display:flex;gap:6px;align-items:center">
+                        <input name="minutes" type="number" min="1" max="2880" value="30"
+                               style="width:80px" title="下载过去多少分钟">
+                        <input type="hidden" name="tasks" value="focus,distraction,hands,phone,audio">
+                        <button class="btn small" type="submit">下载</button>
+                    </form>
+                </td>
+                <td>
+                    <div style="display:flex;gap:6px">
+                        <a class="btn small ghost" th:href="@{'/cameras/' + ${c.id} + '/edit'}">编辑</a>
+                        <form class="inline" th:action="@{'/cameras/' + ${c.id} + '/delete'}" method="post"
+                              onsubmit="return confirm('确定删除该摄像头？');">
+                            <button class="btn small danger" type="submit">删除</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${#lists.isEmpty(cameras)}">
+            暂无摄像头。可先到「萤石账号」点击「同步设备」，或在此手动新增。
+        </div>
+    </div>
+</div>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

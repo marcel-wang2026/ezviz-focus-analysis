@@ -1,0 +1,27 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# 运行时数据（数据库、归档视频、分析结果）
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# 模型权重（体积大，按需下载，见 analyzer/models/README.md）
+analyzer/models/*.onnx
+analyzer/models/*.pt
+analyzer/models/*.bin
+analyzer/models/*.engine
+
+# 日志与临时文件
+*.log
+logs/
+tmp/
+.DS_Store
+*.iml
+.idea/
+.vscode/
