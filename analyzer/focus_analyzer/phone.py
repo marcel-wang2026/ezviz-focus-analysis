@@ -176,24 +176,30 @@ class PhoneDetector:
                 ycrcb, np.array([0, 133, 77]), np.array([255, 173, 127])
             )
 
-            max_area = 0.06 * desk.shape[0] * desk.shape[1]
+            frame_area = float(height * width)
             for contour in contours:
                 area = cv2.contourArea(contour)
-                if area < 400 or area > max_area:
+                # 手机只占画面很小一块：0.04%~2%，避免把台灯、书本等大面积亮块误判为手机
+                ratio = area / frame_area
+                if ratio < 0.0004 or ratio > 0.02:
                     continue
                 x, y, w, h = cv2.boundingRect(contour)
-                if h <= 0:
+                if h <= 0 or w <= 0:
                     continue
                 aspect = w / float(h)
-                if not (0.4 <= aspect <= 2.5):
+                # 手机通常是竖握，宽高比落在 0.35~0.8；横屏或平放场景召回率有限
+                if not (0.35 <= aspect <= 0.8):
+                    continue
+                solidity = area / float(w * h)
+                if solidity < 0.55:
                     continue
                 # 手机附近应有手（皮肤像素）
-                pad = int(max(w, h) * 0.5)
+                pad = int(max(w, h) * 0.6)
                 near = skin[
                     max(0, y - pad): min(skin.shape[0], y + h + pad),
                     max(0, x - pad): min(skin.shape[1], x + w + pad),
                 ]
-                if near.size == 0 or float(near.mean()) / 255.0 < 0.02:
+                if near.size == 0 or float(near.mean()) / 255.0 < 0.05:
                     continue
                 return True, 0.45
             return False, 0.0

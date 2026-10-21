@@ -84,9 +84,17 @@ public class AppProperties {
 
     public static class Demo {
         private boolean enabled = true;
+        /** 可选：指定本地示例视频文件（相对工作目录），为空时用 ffmpeg 生成测试视频 */
+        private String sampleVideo = "";
+        /** 可选：示例视频对应的开始时间（yyyy-MM-ddTHH:mm:ss），为空时取当前时间倒推 */
+        private String sampleStart = "";
 
         public boolean isEnabled() { return enabled; }
         public void setEnabled(boolean enabled) { this.enabled = enabled; }
+        public String getSampleVideo() { return sampleVideo; }
+        public void setSampleVideo(String sampleVideo) { this.sampleVideo = sampleVideo; }
+        public String getSampleStart() { return sampleStart; }
+        public void setSampleStart(String sampleStart) { this.sampleStart = sampleStart; }
     }
 
     public String getTimezone() { return timezone; }

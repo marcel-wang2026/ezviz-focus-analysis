@@ -10,6 +10,7 @@ import com.focus.ezviz.repository.DownloadRuleRepository;
 import com.focus.ezviz.repository.EzvizAccountRepository;
 import com.focus.ezviz.repository.UserRepository;
 import com.focus.ezviz.repository.VideoRecordRepository;
+import com.focus.ezviz.service.MediaTools;
 import com.focus.ezviz.service.VideoArchiveService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +43,7 @@ public class DemoDataInitializer implements ApplicationRunner {
     private final PasswordEncoder passwordEncoder;
     private final VideoArchiveService archiveService;
     private final AppProperties props;
+    private final MediaTools mediaTools;
 
     public DemoDataInitializer(UserRepository userRepository,
                                EzvizAccountRepository accountRepository,
@@ -49,7 +52,8 @@ public class DemoDataInitializer implements ApplicationRunner {
                                DownloadRuleRepository ruleRepository,
                                PasswordEncoder passwordEncoder,
                                VideoArchiveService archiveService,
-                               AppProperties props) {
+                               AppProperties props,
+                               MediaTools mediaTools) {
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
         this.cameraRepository = cameraRepository;
@@ -58,6 +62,7 @@ public class DemoDataInitializer implements ApplicationRunner {
         this.passwordEncoder = passwordEncoder;
         this.archiveService = archiveService;
         this.props = props;
+        this.mediaTools = mediaTools;
     }
 
     @Override
@@ -99,11 +104,11 @@ public class DemoDataInitializer implements ApplicationRunner {
 
         Camera camera = new Camera();
         camera.setAccountId(account.getId());
-        camera.setDeviceSerial("DEMO000000001");
+        camera.setDeviceSerial("BG9468329");
         camera.setChannelNo(1);
-        camera.setName("演示-书房摄像头");
+        camera.setName("书房摄像头（演示样本）");
         camera.setRoi("0.15,0.15,0.7,0.8");
-        camera.setRemark("演示用摄像头，可替换为真实设备");
+        camera.setRemark("真实设备录像因视频加密无法取流，此处使用等长演示样本");
         camera = cameraRepository.save(camera);
 
         DownloadRule rule = new DownloadRule();
@@ -119,12 +124,21 @@ public class DemoDataInitializer implements ApplicationRunner {
         Path demoDir = archiveService.root().resolve("demo");
         Files.createDirectories(demoDir);
         Path demoVideo = demoDir.resolve("demo-lesson.mp4");
-        if (!Files.exists(demoVideo)) {
+        String sampleVideo = props.getDemo().getSampleVideo();
+        if (sampleVideo != null && !sampleVideo.isBlank() && Files.exists(Path.of(sampleVideo))) {
+            Files.copy(Path.of(sampleVideo), demoVideo, StandardCopyOption.REPLACE_EXISTING);
+            log.info("已导入示例视频: {}", sampleVideo);
+        } else if (!Files.exists(demoVideo)) {
             generateDemoVideo(demoVideo);
         }
         if (Files.exists(demoVideo)) {
-            LocalDateTime end = LocalDateTime.now().withNano(0);
-            LocalDateTime begin = end.minusSeconds(90);
+            double duration = mediaTools.probeDurationSeconds(demoVideo);
+            if (duration <= 0) {
+                duration = 90;
+            }
+            LocalDateTime start = parseSampleStart();
+            LocalDateTime end = start != null ? start.plusSeconds((long) duration) : LocalDateTime.now().withNano(0);
+            LocalDateTime begin = start != null ? start : end.minusSeconds((long) duration);
             VideoRecord video = new VideoRecord();
             video.setCameraId(camera.getId());
             video.setCameraName(camera.getName());
@@ -132,15 +146,29 @@ public class DemoDataInitializer implements ApplicationRunner {
             video.setChannelNo(1);
             video.setBeginTime(begin);
             video.setEndTime(end);
-            video.setDurationSec(90);
+            video.setDurationSec(duration);
             video.setFilePath(demoVideo.toAbsolutePath().toString());
             video.setRelPath(archiveService.relativePath(demoVideo));
             video.setFileSize(Files.size(demoVideo));
             video.setStatus("READY");
             video.setSource("IMPORT");
-            video.setMessage("演示视频，可直接点击“分析”体验完整流程");
+            video.setMessage("演示样本：设备 BG9468329 指定时段录像因加密无法取流，使用等长替代样本");
             videoRepository.save(video);
             log.info("已生成演示视频: {}", demoVideo);
+        }
+    }
+
+    /** 解析配置的示例视频开始时间，格式 yyyy-MM-ddTHH:mm:ss，留空或格式错误则返回 null */
+    private LocalDateTime parseSampleStart() {
+        String value = props.getDemo().getSampleStart();
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(value.trim());
+        } catch (Exception e) {
+            log.warn("示例视频开始时间格式不正确: {}", value);
+            return null;
         }
     }
 
